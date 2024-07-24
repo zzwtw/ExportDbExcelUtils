@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.Mapper.ExportDBExcelMapper">
+
+    <select id = "test" resultType="String">
+        select TABLE_NAME from user_tables t where t.TABLESPACE_NAME='XBRL_FA3' and t.TABLE_NAME = 'TXBRL_TEXT_CONDITION_CONFIG_copy1'
+    </select>
+<!--    resultType返回的是集合中的元素类型，而不是集合本身-->
+    <select id="getAllTablesName" resultType="String" databaseId="oracle">
+        SELECT t.table_name FROM user_tables t where t.TABLESPACE_NAME='XBRL_FA3'
+    </select>
+
+    <select id="getUserTalColumnsByTableName" resultType="UserTalColumns" databaseId="oracle">
+        -- 除去了DATA_DEFAULT
+        select t.COLUMN_NAME,
+               t.DATA_TYPE,
+               t.DATA_LENGTH,
+               t.DATA_PRECISION,
+               t.DATA_SCALE,
+               t.NULLABLE,
+               LONG_TO_CHAR(t.COLUMN_ID, t.TABLE_NAME, 'user_tab_columns','DATA_DEFAULT') DATA_DEFAULT, -- 目前不会报错，但是DATA_DEFAULT查询不到数据 nextWeek todo 解决的这个bug
+               c.COMMENTS from user_tab_columns t,user_col_comments c
+        where t.table_name = c.table_name
+          and t.column_name = c.column_name
+          and t.table_name = #{tableName}
+    </select>
+
+    <select id="getDataDefault" resultType="String">
+        select LONG_TO_CHAR(t.COLUMN_ID, t.TABLE_NAME, 'user_tab_columns','DATA_DEFAULT') "DATA_DEFAULT" from user_tab_columns t,user_col_comments c
+        where t.table_name = c.table_name
+          and t.column_name = c.column_name
+          and t.table_name = 'TMP_CPZLGY_ZZLBJT' and t.COLUMN_ID = 11
+    </select>
+<!--获取表的注释-->
+    <select id="getTableComment" resultType="String" databaseId="oracle">
+        SELECT COMMENTS
+        FROM USER_TAB_COMMENTS
+        WHERE TABLE_NAME = #{tableName}
+    </select>
+<!--获取表的类型，table/view-->
+    <select id="getTableType" resultType="String" databaseId="oracle">
+        SELECT OBJECT_TYPE
+        FROM ALL_OBJECTS
+        WHERE OBJECT_NAME = #{tableName} and ROWNUM = 1
+    </select>
+<!--    根据oracle数据库，导出一份字典项的excel-->
+    <select id="getTsDictionaryItems" resultMap="getTsDictionaryItemsMap" databaseId="oracle">
+        select
+            t.dic_no,
+            t.dic_name,
+            case t.dic_vtype when 1 then '数字型' else '字符型' end as dic_vtype,
+            i.dic_code,
+            i.dic_item
+        from TS_DICTIONARYMASTER t
+                 left join ts_dictionaryitems i on t.dic_no=i.dic_no
+        order by t.dic_no,i.dic_code
+    </select>
+    <resultMap id="getTsDictionaryItemsMap" type="com.example.Dao.Oracle.TsDictionaryItems">
+        <result property="dicNo" column="dic_no"></result>
+        <result property="dicName" column="dic_name"></result>
+        <result property="dicType" column="dic_vtype"></result>
+        <result property="dicCode" column="dic_code"></result>
+        <result property="dicItem" column="dic_item"></result>
+    </resultMap>
+
+<!--    mysql-->
+    <select id="getAllTablesName" resultType="String" databaseId="mysql">
+        SELECT distinct TABLE_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = 'xbrl'
+    </select>
+
+    <select id="getUserTalColumnsByTableName" resultMap="UserTalColumnsMysqlResultMap" databaseId="mysql">
+        SELECT column_name,data_type,character_maximum_length,numeric_precision,numeric_scale,is_nullable,column_default,column_comment
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = 'xbrl' AND TABLE_NAME = #{tableName};
+    </select>
+
+    <!--获取表的注释-->
+    <select id="getTableComment" resultType="String" databaseId="mysql">
+        SELECT TABLE_COMMENT
+        FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = 'xbrl'
+          AND TABLE_NAME = #{tableName}
+    </select>
+    <!--获取表的类型，table/view-->
+    <select id="getTableType" resultType="String" databaseId="mysql">
+        SELECT TABLE_TYPE
+        FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = 'xbrl'
+          AND TABLE_NAME = #{tableName}
+    </select>
+
+    <resultMap id="UserTalColumnsMysqlResultMap" type="com.example.Dao.Oracle.UserTalColumns">
+        <result property="columnName" column="column_name"></result>
+        <result property="dataType" column="data_type"></result>
+        <result property="dataLength" column="character_maximum_length"></result>
+        <result property="dataPrecision" column="numeric_precision"></result>
+        <result property="dataScale" column="numeric_scale"></result>
+        <result property="nullAble" column="is_nullable"></result>
+        <result property="dataDefault" column="column_default"></result>
+        <result property="comments" column="column_comment"></result>
+    </resultMap>
+</mapper>

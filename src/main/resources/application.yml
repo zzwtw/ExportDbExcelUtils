@@ -1,0 +1,25 @@
+server:
+  port: 8080
+spring:
+  mvc:
+    servlet:
+      load-on-startup: 10
+  datasource:
+#    mysql数据源
+#    driver-class-name: com.mysql.jdbc.Driver
+#    url: jdbc:mysql://10.20.166.49:8880/xbrl?useSSL=false&serverTimezone=UTC&useLegacyDatetimeCode=false
+#    username: xbrl
+#    password: xbrl
+#    oracle数据源
+    driverClassName: oracle.jdbc.driver.OracleDriver
+    url: jdbc:oracle:thin:@10.20.39.219:1521:orcl
+    username: xbrl_fa3
+    password: xbrl_fa3
+  view:
+    prefix
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.Dao.Oracle
+  configuration:
+    map-underscore-to-camel-case: true
+debug: true #开启debug日志
